@@ -67,11 +67,11 @@ void Ant::print() {
 			lastColor = -1;
 		}
 	}
+	std::printf("Generation: %d\r\n",m_generation);
 }
 
 void Ant::printOver(int delay) {
 	print();
-	std::cout << "Generation: " << m_generation;
 	if (delay) usleep(delay * 1000);
 	std::printf("\r\x1b[%dA",m_maxy+1);
 }
