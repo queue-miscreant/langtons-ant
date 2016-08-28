@@ -14,20 +14,19 @@ class Ant {
 		int m_orientation;
 
 		int m_generation;
-		int m_maxcolor;
+		bool* m_rules;
+		int m_numrules;
 
-		int m_delay;
-
-		void printOver();
+		void printOver(int delay);
 		void printColor(int color);
+		void wrapEdges();
 	public:
-		Ant(int maxx, int maxy);
-		Ant(int maxx, int maxy, int maxcolor, int delay);
+		Ant(int maxx, int maxy, int numrules, char* rulestring);
 		~Ant();
 	
-		void animate(bool direction(int),int until);
+		void animate(int until,int delay);
 		
-		void move(bool direction(int));
+		void move();
 		void print();
 };
 

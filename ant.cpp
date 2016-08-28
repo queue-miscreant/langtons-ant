@@ -1,6 +1,6 @@
 #include "ant.h"
 
-Ant::Ant(int maxx, int maxy, int maxcolor, int delay) {
+Ant::Ant(int maxx, int maxy, int numrules, char* rulestring) {
 	m_maxx = maxx;
 	m_maxy = maxy;
 	m_size = maxx*maxy;
@@ -11,22 +11,39 @@ Ant::Ant(int maxx, int maxy, int maxcolor, int delay) {
 	//3 1
 	// 2
 	m_orientation = 0;
+	m_generation = 0;
 
 	m_board = new int[m_size];
-	for (int i = 0; i < m_size; i++) {
+	for (int i = 0; i < m_size; i++)
 		m_board[i] = 0;
-	}
-	m_generation = 0;
-	m_maxcolor = maxcolor;
-	m_delay = delay*1000;
-}
 
-Ant::Ant(int maxx, int maxy) {
-	Ant(maxx, maxy, 2, 500);
+	m_numrules = numrules;
+	m_rules = new bool[numrules];
+	for (int i = 0; i < numrules; i++) {
+		m_rules[i] = rulestring[i]-48;
+	}
+
+	/*
+	char buff[2];
+	for (int i = 0; rulestring[i] != 0; i++) {
+		if (isdigit(rulestring[i])) {
+			int loc;
+			i++; //check the next (number?)
+			if (isdigit(rulestring[i])) {
+				buff[0] = rulestring[i-1];
+				buff[1] = rulestring[i];
+				std::sprintf(buff,"%d",loc);
+			} else
+				loc = std::atoi(&rulestring[i-1]);
+			m_rules[loc] = 1;
+		}
+	}
+	*/
 }
 
 Ant::~Ant() {
 	delete [] m_board;
+	delete [] m_rules;
 }
 
 void Ant::printColor(int color) {
@@ -55,27 +72,27 @@ void Ant::print() {
 			lastColor = -1;
 		}
 	}
-	std::cout << "Generation: " << m_generation << std::endl;
 }
 
-void Ant::printOver() {
+void Ant::printOver(int delay) {
 	print();
-	usleep(m_delay);
+	std::cout << "Generation: " << m_generation << std::endl;
+	if (delay) usleep(delay * 1000);
 	std::printf("\x1b[%dF",m_maxy+1);
 }
 
 //direction(int) is called on color
-void Ant::animate(bool direction(int),int until) {
+void Ant::animate(int until,int delay) {
 	for (m_generation = 0; m_generation < until; m_generation++) {
-		move(direction);
-		printOver();
+		printOver(delay);
+		move();
 	}
 	print();
 }
 
-void Ant::move(bool direction(int)) {
+void Ant::move() {
 	int pos = m_xpos+m_maxx*m_ypos;
-	if (direction(m_board[pos])) {	//turn right
+	if (m_rules[m_board[pos]]) {	//turn right
 		m_orientation += 1;
 		if (m_orientation == 4) m_orientation = 0;
 	} else {						//turn left
@@ -84,7 +101,7 @@ void Ant::move(bool direction(int)) {
 	}
 	//increment the color
 	m_board[pos] += 1;
-	m_board[pos] %= m_maxcolor;
+	m_board[pos] %= m_numrules;
 	//go to the next cell
 	if (m_orientation&1) {	//1 or 3 (left right)
 		m_xpos += m_orientation-2;
@@ -97,4 +114,7 @@ void Ant::move(bool direction(int)) {
 		if (m_ypos < 0) m_ypos = m_maxy-1;
 		else if (m_ypos >= m_maxy) m_ypos = 0;
 	}
+}
+
+void Ant::wrapEdges() {
 }
