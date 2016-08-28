@@ -1,5 +1,5 @@
 ant: main.o ant.o
-	g++ -std=c++11 -g -Wall main.o ant.o -o ant
+	g++ -std=c++11 -g -Wall main.o -lncurses ant.o -o ant
 
 main.o: main.cpp 
 	g++ -std=c++11 -g -Wall -c main.cpp

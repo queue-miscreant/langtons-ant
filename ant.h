@@ -1,6 +1,8 @@
 #ifndef ANT_H
 #include <iostream>
 #include <unistd.h>  
+#include <string.h>
+#include <curses.h>
 
 class Ant {
 	private:
@@ -12,6 +14,9 @@ class Ant {
 		int m_xpos;
 		int m_ypos;
 		int m_orientation;
+		bool m_invert;
+		bool m_xwrap;
+		bool m_ywrap;
 
 		int m_generation;
 		bool* m_rules;
@@ -21,10 +26,10 @@ class Ant {
 		void printColor(int color);
 		void wrapEdges();
 	public:
-		Ant(int maxx, int maxy, int numrules, char* rulestring);
+		Ant(int maxx, int maxy, char* rulestring, char* manifold);
 		~Ant();
 	
-		void animate(int until,int delay);
+		void animate(int delay);
 		
 		void move();
 		void print();

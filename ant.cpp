@@ -1,6 +1,6 @@
 #include "ant.h"
 
-Ant::Ant(int maxx, int maxy, int numrules, char* rulestring) {
+Ant::Ant(int maxx, int maxy, char* rulestring, char* manifold) {
 	m_maxx = maxx;
 	m_maxy = maxy;
 	m_size = maxx*maxy;
@@ -11,34 +11,29 @@ Ant::Ant(int maxx, int maxy, int numrules, char* rulestring) {
 	//3 1
 	// 2
 	m_orientation = 0;
+	m_invert = false;
 	m_generation = 0;
 
 	m_board = new int[m_size];
 	for (int i = 0; i < m_size; i++)
 		m_board[i] = 0;
-
-	m_numrules = numrules;
-	m_rules = new bool[numrules];
-	for (int i = 0; i < numrules; i++) {
-		m_rules[i] = rulestring[i]-48;
-	}
-
-	/*
-	char buff[2];
-	for (int i = 0; rulestring[i] != 0; i++) {
-		if (isdigit(rulestring[i])) {
-			int loc;
-			i++; //check the next (number?)
-			if (isdigit(rulestring[i])) {
-				buff[0] = rulestring[i-1];
-				buff[1] = rulestring[i];
-				std::sprintf(buff,"%d",loc);
-			} else
-				loc = std::atoi(&rulestring[i-1]);
-			m_rules[loc] = 1;
-		}
-	}
-	*/
+	
+	for (m_numrules = 0; rulestring[m_numrules] != 0; m_numrules++);
+	m_rules = new bool[m_numrules];
+	for (int i = 0; i < m_numrules; i++)
+		if (rulestring[i] == 48 or rulestring[i] == 49) //0 or 1 only
+			m_rules[i] = rulestring[i]-48;
+		else
+			m_rules[i] = 0;
+	
+	if (strcmp(manifold,"torus") == 0)
+		m_xwrap = false,m_ywrap = false;
+	else if (strcmp(manifold,"klein") == 0)
+		m_xwrap = true,m_ywrap = false;
+	else if (strcmp(manifold,"turnklein") == 0)
+		m_xwrap = false,m_ywrap = true;
+	else if (strcmp(manifold,"projective") == 0)
+		m_xwrap = true,m_ywrap = true;
 }
 
 Ant::~Ant() {
@@ -68,7 +63,7 @@ void Ant::print() {
 		lastColor = thisColor;
 		std::cout << ' ';
 		if (i % m_maxx == m_maxx-1) {
-			std::printf("\x1b[m\n");
+			std::printf("\x1b[m\r\n");
 			lastColor = -1;
 		}
 	}
@@ -76,18 +71,46 @@ void Ant::print() {
 
 void Ant::printOver(int delay) {
 	print();
-	std::cout << "Generation: " << m_generation << std::endl;
+	std::cout << "Generation: " << m_generation;
 	if (delay) usleep(delay * 1000);
-	std::printf("\x1b[%dF",m_maxy+1);
+	std::printf("\r\x1b[%dA",m_maxy+1);
 }
 
 //direction(int) is called on color
-void Ant::animate(int until,int delay) {
-	for (m_generation = 0; m_generation < until; m_generation++) {
-		printOver(delay);
-		move();
+void Ant::animate(int delay) {
+	WINDOW* win = initscr();
+	char input;
+	bool go = true;
+	bool loop = true;
+
+	cbreak();
+	noecho();
+	nodelay(win,true);
+	while (loop) {
+		if (go) {
+			printOver(delay);
+			move();
+			m_generation++;
+		}
+		input = (char) getch();
+		if (input != ERR) {
+			if (input == ' ')
+				go = not go;
+			else if (input == 'q')
+				loop = false;
+		}
 	}
-	print();
+	nocbreak();
+	echo();
+	nodelay(win,false);
+
+	delwin(win);
+	endwin();
+	refresh();
+
+	for (int i = 0; i <= m_maxy+1; i++)
+		std::printf("\x1b[K\n");
+	std::printf("\x1b[%dA",m_maxy+2);
 }
 
 void Ant::move() {
@@ -103,18 +126,39 @@ void Ant::move() {
 	m_board[pos] += 1;
 	m_board[pos] %= m_numrules;
 	//go to the next cell
-	if (m_orientation&1) {	//1 or 3 (left right)
-		m_xpos += m_orientation-2;
-		//connect the sides
-		if (m_xpos < 0) m_xpos = m_maxx-1;
-		else if (m_xpos >= m_maxx) m_xpos = 0;
-	} else {				//0 or 2 (up down)
-		m_ypos += m_orientation-1;
-		//connect the sides
-		if (m_ypos < 0) m_ypos = m_maxy-1;
-		else if (m_ypos >= m_maxy) m_ypos = 0;
-	}
+	if (m_orientation&1) 	//1 or 3 (left right)
+		if (m_invert)
+			m_xpos -= m_orientation-2;
+		else
+			m_xpos += m_orientation-2;
+	else					//0 or 2 (up down)
+		if (m_invert)
+			m_ypos -= m_orientation-1;
+		else
+			m_ypos += m_orientation-1;
+	wrapEdges();
 }
 
 void Ant::wrapEdges() {
+	if (m_ypos < 0) {
+		m_ypos = m_maxy-1;
+		if (m_ywrap)
+			m_xpos = m_maxx-1-m_xpos, m_invert = not m_invert;
+	} else if (m_ypos >= m_maxy) {
+		m_ypos = 0;
+		if (m_ywrap)
+			m_xpos = m_maxx-1-m_xpos, m_invert = not m_invert;
+	}
+
+	if (m_xpos < 0) {
+		m_xpos = m_maxx-1;
+		//orientation = 00: orientation -> 10
+		//orientation = 10: orientation -> 00
+		if (m_xwrap) 
+			m_ypos = m_maxy-1-m_ypos, m_invert = not m_invert;
+	} else if (m_xpos >= m_maxx) {
+		m_xpos = 0;
+		if (m_xwrap)
+			m_ypos = m_maxy-1-m_ypos, m_invert = not m_invert;
+	}
 }

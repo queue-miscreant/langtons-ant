@@ -2,7 +2,7 @@
 
 int main(int argc,char** argv) {
 	//invalid arg count
-	if (argc < 5 or argc > 6) {
+	if (argc < 4 or argc > 6) {
 		std::cout << "Invalid number of arguments" << std::endl;
 		return -1;
 	}
@@ -14,11 +14,14 @@ int main(int argc,char** argv) {
 		std::cout << "Invalid board size" << std::endl;
 		return -2;
 	}
-	int colors = std::atoi(argv[3]);
-	Ant langton (maxx,maxy,colors,argv[4]);
+	if (argv[4] == nullptr) {
+		char temp[] = "torus";
+		argv[4] = temp;
+	}
+	Ant langton (maxx,maxy,argv[3],argv[4]);
 	int delay = 10;
 	if (argc > 5) {
 		delay = std::atoi(argv[5]);
 	}
-	langton.animate(2e4,delay);
+	langton.animate(delay);
 }
