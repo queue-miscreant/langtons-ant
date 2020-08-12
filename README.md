@@ -1,4 +1,4 @@
-Langton's ant, a widely-known cellular automata
+Langton's ant, a widely-known cellular automaton
 
 `./ant w h rules [manifold]`
 
