@@ -1,4 +1,5 @@
-Langton's ant, a widely-known cellular automaton
+Langton's ant, a widely-known cellular automaton,
+drawn with ANSI escapes in the terminal
 
 `./ant w h rules [manifold]`
 
